@@ -110,7 +110,7 @@ export const COLUMNS: ColumnDef[] = [
     key: "effectiveResolutionDays",
     header: "Resolution (d)",
     sortValue: (d) => d.effectiveResolutionDays,
-    render: (d) => `${d.effectiveResolutionDays.toFixed(2)}${d.isCensored ? "*" : ""}`,
+    render: (d) => (d.isCensored ? "—" : d.effectiveResolutionDays.toFixed(2)),
     align: "right",
     minWidth: "min-w-[120px]",
   },

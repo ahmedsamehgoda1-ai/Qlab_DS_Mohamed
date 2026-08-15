@@ -129,8 +129,8 @@ export function DefectsTable({ data }: DefectsTableProps) {
           Showing <span className="font-medium text-slate">{rangeStart}–{rangeEnd}</span> of{" "}
           <span className="font-medium text-slate">{sorted.length.toLocaleString()}</span> records
           {" · "}
-          <span title="Effective resolution days for still-open defects are marked with * (days elapsed so far, not a final value)">
-            * = open, elapsed so far
+          <span title="Still-open defects show '—' for Resolution — there's no final resolution time yet, so no number is shown.">
+            — = still open
           </span>
         </span>
         <div className="sm:ml-auto flex items-center gap-2">

@@ -5,6 +5,7 @@ import { MonthNavigator } from "./MonthNavigator";
 import { ResolutionTimeChart } from "./charts/ResolutionTimeChart";
 import { DefectStationMatrix } from "./DefectStationMatrix";
 import { TrackingDashboard } from "./TrackingDashboard";
+import { RootCauseAssist } from "./RootCauseAssist";
 
 export function AnalysisView() {
   // Flagged-outlier store lives here — shared between the chart (which
@@ -58,6 +59,12 @@ export function AnalysisView() {
         items={Object.values(flagged)}
         onUnflag={handleUnflag}
         onUpdateComment={handleUpdateComment}
+      />
+
+      <RootCauseAssist
+        flaggedItems={Object.values(flagged)}
+        monthDefects={monthDefects}
+        monthLabel={monthLabel}
       />
     </div>
   );

@@ -21,8 +21,8 @@ const PAGE_META: Record<NavId, { title: string; subtitle: string }> = {
     subtitle: "Searchable, sortable defect log",
   },
   info: {
-    title: "Info",
-    subtitle: "Reference data and system notes",
+    title: "Documentation",
+    subtitle: "Assumptions, statistical methods, and reflection",
   },
 };
 

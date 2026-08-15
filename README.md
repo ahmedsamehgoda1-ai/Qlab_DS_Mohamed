@@ -3,12 +3,17 @@
 A quality-monitoring dashboard for the BMW iX0 production line, built for the
 QLab Skills Interview Case Study (Software Engineering — Total Vehicle Quality).
 
+See **`DOCUMENTATION.md`** for the full technical write-up — why each chart
+exists, why each statistical method was chosen over the alternatives, the
+data-cleaning discovery, and Task 6's causal inference analysis.
+
 ## Stack
-- React 18 + TypeScript
-- Vite
+- React 18 + TypeScript + Vite
 - Tailwind CSS
 - lucide-react (icons)
-- recharts (charts — wired up in Task 1/2)
+- recharts (Dashboard tab charts)
+- Custom SVG (Analysis tab's outlier chart and Defect × Station matrix —
+  recharts doesn't support these directly; see DOCUMENTATION.md §3–5)
 
 ## Getting started
 
@@ -31,25 +36,63 @@ npm run preview
 ```
 src/
   components/
-    layout/      Sidebar, Topbar, status chip, brand mark
-    dashboard/    KPI cards, chart panels, Dashboard tab
-    defects/      Defects table/search/filter tab
-    info/         Reference info tab
-  data/           Parsed/prepped defect dataset (added in Task 1)
-  types/          Shared TypeScript types for defect records
-  styles/         Tailwind entry stylesheet
-  App.tsx         Sidebar navigation + view routing
-  main.tsx        React entry point
+    layout/       Sidebar, Topbar, status chip
+    dashboard/     KPI cards, Top 5 pie, severity chart, defect-rate breakdown,
+                   station Pareto — Dashboard tab
+    analysis/      Resolution-time outlier chart, Defect × Station anomaly
+                   matrix, flagging workflow, Tracking Dashboard — Analysis tab
+    defects/       Sortable/searchable defect spreadsheet — Defects tab
+    info/          Reference info + in-app reflection — Info tab
+    shared/        ChartCard (shared chart frame used across tabs)
+  data/            defects.json (cleaned dataset) + loadDefects.ts (enrichment)
+  utils/           stats.ts (IQR), defectMetrics.ts (all chart aggregations,
+                   chi-square residual analysis)
+  types/           Shared TypeScript types
+  App.tsx          Sidebar navigation + view routing
+  main.tsx         React entry point
+DOCUMENTATION.md   Full rationale for every chart, method, and design decision
 ```
+
+## Task 5 — Root Cause Assist (local LLM via Ollama)
+
+The Analysis tab's "Root Cause Assist" panel calls a **local Ollama**
+instance directly from the browser (no backend, no API key — Ollama's local
+server has none). To use it:
+
+```bash
+# 1. Install Ollama: https://ollama.com
+# 2. Pull a model (llama3.2 is the default the app expects, but the
+#    model-name field in the panel can be changed to whatever you've pulled)
+ollama pull llama3.2
+
+# 3. Start the server
+ollama serve
+```
+
+If requests are blocked by CORS, restart Ollama with this app's origin
+allowed:
+
+```bash
+OLLAMA_ORIGINS=http://localhost:5173 ollama serve
+```
+
+The panel is disabled until at least one outlier is flagged in the
+Analysis tab (Task 3's workflow) — it synthesizes flagged items against
+the Defect × Station anomaly matrix, not raw data alone. Calling the LLM
+directly from the browser is a demo-only trade-off (documented in
+`DOCUMENTATION.md`) — fine here since Ollama has no secret to leak, but not
+how you'd wire up a hosted API key in production.
 
 ## Status
 
-This is the GUI shell (sidebar navigation across Dashboard / Defects / Info,
-BMW navy/blue/teal palette). Data ingestion, outlier detection, the flagging
-workflow, the Gen-AI panel, and causal inference all land on top of this in
-the tasks that follow — see the case study PDF for the full task breakdown.
+All tasks are implemented. Task 6 (causal inference) is documentation-only
+per direction — see `DOCUMENTATION.md` §9, not an in-app feature.
 
 ## Data
 
-The source dataset (`Quality_Notional_Data_v2_resolution_variation_final.xlsx`,
-9,000 defect records) is not yet wired in — see `src/data/` once Task 1 lands.
+`src/data/defects.json` is generated from
+`Quality_Notional_Data_v2_resolution_variation_final.xlsx` via a Python
+script (pandas/openpyxl) that also canonicalizes the `defectName` and
+`station` fields — see `DOCUMENTATION.md` §1 for why that's necessary (the
+raw data has 237/35 distinct strings for what are really only 15/29 true
+values, due to deliberately injected typo noise).

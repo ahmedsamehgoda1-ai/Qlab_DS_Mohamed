@@ -343,3 +343,10 @@ export function computeDefectStationMatrix(defects: DefectRecord[]): DefectStati
 
   return { defects: defectNames, stations: stationNames, cells, grandTotal: N };
 }
+
+export function findMatrixCell(matrix: DefectStationMatrix, defect: string, station: string): MatrixCell | undefined {
+  const di = matrix.defects.indexOf(defect);
+  const si = matrix.stations.indexOf(station);
+  if (di < 0 || si < 0) return undefined;
+  return matrix.cells[di][si];
+}

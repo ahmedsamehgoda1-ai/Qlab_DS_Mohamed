@@ -287,3 +287,114 @@ deciding together what it should be (a few candidates: exporting the
 Tracking Dashboard to CSV/PDF for sharing outside the app, a "data quality"
 audit panel surfacing the cleanup stats from §1, or a lightweight
 localStorage persistence layer for flags so they survive a refresh).
+
+---
+
+## 9. Task 6 — Causal inference: resolution time vs. severity & defect category
+
+*(Per direction, this analysis lives here in the documentation rather than as
+an in-app feature.)*
+
+**The brief asks**: does resolution time affect Severity Rating and Defect
+Category, and how would an X% reduction in resolution time affect them?
+
+**A temporal problem with the question as posed**: Severity Rating and
+Defect Category are both assigned when a defect is *discovered* — before
+resolution work has even started. Resolution time is measured *after* that.
+An effect cannot precede its cause: it is not physically possible for how
+long a defect takes to fix to retroactively change the severity it was
+already classified as, or what kind of defect it already was. If there's a
+causal relationship here at all, it almost certainly runs the *other way*
+— severity/category might influence how quickly something gets resolved
+(via prioritization), not the reverse. This is worth stating plainly rather
+than silently building a model that implies the wrong direction.
+
+**Testing for any relationship at all, in either direction** (using the
+6,790 resolved records — computed with Python/scipy against the full
+cleaned dataset):
+
+| Test | Statistic | p-value | Result |
+|---|---|---|---|
+| Spearman correlation, resolution days vs. severity rating | ρ = −0.009 | 0.467 | No significant association |
+| Kruskal–Wallis, resolution time across the 6 Defect Categories | H = 4.72 | 0.451 | No significant difference |
+| Kruskal–Wallis, resolution time across the 6 Severity Ratings | H = 3.95 | 0.557 | No significant difference |
+
+Median resolution time is essentially flat regardless of severity (0.31–0.33
+days across all 6 ratings) or category (0.28–0.39 days across all 6
+categories). **There is no meaningful statistical relationship in either
+direction** — not just no causal one. Combined with the temporal-ordering
+issue above, that means the honest answer to "does resolution time affect
+severity/category" is: it can't, and empirically, it doesn't correlate with
+them either.
+
+### Reframing "X% reduction" as a decision-support question
+
+Since there's no relationship to project through, simulating "if resolution
+time dropped by X%, severity would shift by Y" would be manufacturing a
+causal claim the data doesn't support. What *can* legitimately be asked
+instead: **if the organization tightened its resolution-time SLA, which
+kinds of defects would that newly flag as non-compliant?** That's a real
+resource-planning question, answerable from the data as-is. Using the
+current upper-fence threshold (0.98 days, from the same IQR method used in
+the Analysis tab) as a baseline "acceptable" resolution time:
+
+| SLA tightened by | New target | Historically-resolved records that would now breach it | Of those, high-severity (rating 1–2) | Of those, critical/safety category |
+|---|---|---|---|---|
+| 10% | 0.88 days | 696 (10.3% of all resolved) | 8.6% | 1.0% |
+| 25% | 0.74 days | 830 (12.2%) | 9.0% | 1.0% |
+| 50% | 0.49 days | 1,718 (25.3%) | 8.5% | 1.1% |
+
+For comparison, of the 2,210 currently-open defects, 8.2% are high-severity
+and 0.5% are critical/safety — almost identical proportions to the breach
+groups above at every tightness level.
+
+**Why this matters for a decision**: the severity/category mix of "slow"
+defects stays essentially constant no matter how aggressively the SLA is
+tightened. That's the data-side confirmation of the null result above —
+and it's actually an operationally interesting finding in its own right:
+**resolution speed does not currently appear to be prioritized by
+severity**. A critical/safety-category defect is resolved on roughly the
+same timeline as a cosmetic one. Whether that's intentional (e.g., an
+automated or parallelized fix process where severity doesn't affect queue
+position) or a process gap worth addressing (should critical/safety
+defects actually be fast-tracked?) is a question for quality leadership —
+but it's the kind of question this analysis surfaces cleanly, which a
+naively-built "resolution time causes severity" model would have obscured
+rather than revealed.
+
+---
+
+## 10. Task 5 — Gen AI: Root Cause Assist
+
+**Where an LLM actually adds value here, and where it wouldn't**: everything
+else in this app is deterministic — IQR fences, chi-square residuals,
+sortable tables. That's the right tool for "is this number unusual." None
+of it can read **unstructured human judgment** — the free-text comments an
+engineer types when flagging something (Task 3). That's exactly what an
+LLM is suited for and code isn't, so that's where this feature is aimed,
+rather than at re-explaining a chart in prose (which would be decoration,
+not analysis).
+
+**What it does**: takes the current month's flagged items — defect name,
+station, days to resolve, and the engineer's comment (Task 3's output) —
+cross-references each one against the Defect × Station anomaly matrix
+(Task 2/§5's adjusted residual for that exact defect/station combination),
+and asks the model to synthesize whether two or more flagged items share a
+likely common cause. This chains three separate analyses together
+(outlier detection → human annotation → chi-square anomaly matrix → LLM
+synthesis) rather than operating on raw data alone — the "1-2 steps
+further down the problem-solving process" the brief asks for.
+
+**Why this isn't a chatbot**: it's a single "Generate" action over one
+fixed, structured prompt built entirely from app state — there's no
+conversation history, no follow-up turns, no free-form user input reaching
+the model at all. The prompt explicitly instructs the model to skip
+pleasantries/disclaimers and stay under 100 words, and the panel is
+visually distinct from every other chart (dashed indigo border, "AI-generated"
+badge) so it's never mistaken for a measured result.
+
+**Model / API**: Ollama, running locally, called directly from the browser
+— per direction, no backend proxy. This is safe specifically *because*
+Ollama has no API key to leak; it would be the wrong call for any hosted
+API (OpenAI, Anthropic, etc.), where the key would end up shipped in the
+browser bundle. Documented in the README as a demo-only architecture choice.
