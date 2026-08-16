@@ -78,7 +78,7 @@ If requests are blocked by CORS, restart Ollama with this app's origin
 allowed:
 
 ```bash
-OLLAMA_ORIGINS=http://localhost:5173 ollama serve
+OLLAMA_ORIGINS=http://localhost:"port number" ollama serve
 ```
 
 The panel is disabled when no defect shows a `potential-escape` or
