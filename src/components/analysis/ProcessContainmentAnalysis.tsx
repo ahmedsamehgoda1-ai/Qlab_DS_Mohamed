@@ -60,7 +60,7 @@ export function ProcessContainmentAnalysis({
   onScopeChange: (scope: "month" | "all-time") => void;
 }) {
   // Scope is owned by the parent (AnalysisView), not local state here —
-  // Root Cause Assist below needs to reason about the exact same slice of
+  // Process Containment Insight below needs to reason about the exact same slice of
   // data this table is showing, so both read from one shared value instead
   // of risking the AI explaining a different scope than what's on screen.
   const activeDefects = scope === "month" ? monthDefects : allDefects;
@@ -197,7 +197,7 @@ export function ProcessContainmentAnalysis({
             expected stations and Final Quality — a stronger signal that the process mapping itself may not
             match reality, worth checking before treating the pattern as a real production issue. No
             production-volume data exists in this dataset, so these are case counts and detection percentages
-            only — not true defect rates. Root Cause Assist below explains <em>why</em> a
+            only — not true defect rates. Process Containment Insight below explains <em>why</em> a
             potential-escape or data-quality-concern signal might be happening, generated fresh
             from this table each time — not written in advance.
           </p>

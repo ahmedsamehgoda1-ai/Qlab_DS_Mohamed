@@ -28,8 +28,8 @@ export on the Tracking Dashboard (`src/components/analysis/TrackingDashboard.tsx
 refresh" limitation.
 
 **Output Task 5 – Gen AI**
-`src/components/analysis/RootCauseAssist.tsx`, prompt logic in
-`src/utils/rootCausePrompt.ts`, Ollama client in `src/utils/ollamaClient.ts`.
+`src/components/analysis/ProcessContainmentInsight.tsx`, prompt logic in
+`src/utils/processContainmentInsightPrompt.ts`, Ollama client in `src/utils/ollamaClient.ts`.
 
 **Output Task 6 – Causal Inference**
 `DOCUMENTATION.md` only, per direction — not an in-app feature.

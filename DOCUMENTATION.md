@@ -1,12 +1,5 @@
 # BMW QLab — Documentation & Walkthrough
 
-
-
-## Assumptions
-
-- Time to Resolution and Root Cause Identified are blank on the same records — assumed still unresolved, not missing data. Used elapsed-days-so-far instead of leaving them out or defaulting to 0.
-- The xlsx had columns the PDF never mentioned (Severity Category, Resolution Date, Rework Time). Assumed they were meant to be used, not decorative — built them into the analysis.
-- In the Defect × Station containment analysis, assumed the "expected" detection station(s) for each defect type based on manufacturing process logic (e.g. Loose Wiring → Wire Harness Installation, Electrical Test Checkpoint) rather than deriving them from the data itself — the dataset can say what happened, but not what's structurally correct, so this had to be a stated assumption rather than a calculated one.
 ## AI tools used
 
 I used two different AI tools for two different parts of this project.
@@ -20,7 +13,18 @@ First prompt I sent to ChatGPT, to start exploring the dataset:
 > "I want you to do full and complete analysis on the dataset attached.
 > Show the trends, correlations, Anomalies and a final review for it."
 
-That initial pass is what pointed me toward things like the resolution-time skew and some of the odd patterns I dug into further myself (the typo noise in defect/station names, the rework-time observation). From there, Claude was for building — turning those findings into the actual dashboard, the outlier detection, and the containment analysis, based on decisions and ideas I made along the way.
+That initial pass is what pointed me toward things like the resolution-time
+skew and some of the odd patterns I dug into further myself (the typo
+noise in defect/station names, the rework-time observation). From there,
+Claude was for building — turning those findings into the actual dashboard,
+the outlier detection, and the containment analysis, based on decisions I
+made along the way, not decisions the AI made for me.
+
+## Assumptions
+
+- Time to Resolution and Root Cause Identified are blank on the same records — assumed still unresolved, not missing data. Used elapsed-days-so-far instead of leaving them out or defaulting to 0.
+- The xlsx had columns the PDF never mentioned (Severity Category, Resolution Date, Rework Time). Assumed they were meant to be used, not decorative — built them into the analysis.
+- In the Defect × Station containment analysis, assumed the "expected" detection station(s) for each defect type based on manufacturing process logic (e.g. Loose Wiring → Wire Harness Installation, Electrical Test Checkpoint) rather than deriving them from the data itself — the dataset can say what happened, but not what's structurally correct, so this had to be a stated assumption rather than a calculated one.
 
 ## Things that stood out
 
@@ -133,7 +137,7 @@ under one generic "anomaly" flag.
 
 ## Design
 
-Color palette pulled from BMW's own site — navy, blue, white, black. Defects tab is split from Dashboard/Analysis on purpose: a full spreadsheet next to a page of charts gets cluttered fast. Analysis groups everything investigative (outlier detection, containment, flagging, Root Cause Assist) separately from the Dashboard's at-a-glance overview.
+Color palette pulled from BMW's own site — navy, blue, white, black. Defects tab is split from Dashboard/Analysis on purpose: a full spreadsheet next to a page of charts gets cluttered fast. Analysis groups everything investigative (outlier detection, containment, flagging, Process Containment Insight) separately from the Dashboard's at-a-glance overview.
 
 ## Limitations
 
@@ -178,7 +182,7 @@ it's actually showing.
 
 ---
 
-**Task 5 (Root Cause Assist)**: local LLM via Ollama, called directly from the browser — no backend, no key to leak. Scans the Defect × Station table for escape/data-quality signals and generates an explanation for each, fresh every run — shares the same Month/All-time scope as the table above it, so it never reasons about a different slice of data than what's on screen. Setup in the README.
+**Task 5 (Process Containment Insight)**: local LLM via Ollama, called directly from the browser — no backend, no key to leak. Named for what it explains rather than "prediction," since it reasons about signals already computed from real data, not forecasting something unknown. Scans the Defect × Station table for escape/data-quality signals and generates an explanation for each, fresh every run — shares the same Month/All-time scope as the table above it, so it never reasons about a different slice of data than what's on screen. Setup in the README.
 
 ## Task 6 — causal inference (documentation only, not built into the app)
 

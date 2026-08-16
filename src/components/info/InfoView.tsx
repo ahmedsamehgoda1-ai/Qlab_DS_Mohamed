@@ -99,7 +99,7 @@ export function InfoView() {
           Color palette pulled from BMW's own site — navy, blue, white, black. Defects tab is
           split from Dashboard/Analysis on purpose: a full spreadsheet next to a page of charts
           gets cluttered fast. Analysis groups everything investigative (outlier detection,
-          containment, flagging, Root Cause Assist) separately from the Dashboard's at-a-glance
+          containment, flagging, Process Containment Insight) separately from the Dashboard's at-a-glance
           overview.
         </p>
       </div>

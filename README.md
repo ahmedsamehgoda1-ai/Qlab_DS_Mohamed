@@ -7,6 +7,9 @@ See **`DOCUMENTATION.md`** for the full technical write-up — why each chart
 exists, why each statistical method was chosen over the alternatives, the
 data-cleaning discovery, and Task 6's causal inference analysis.
 
+See **`DELIVERABLE_MAP.md`** for exactly where each of the case study's
+6 required tasks lives in this codebase.
+
 ## Stack
 - React 18 + TypeScript + Vite
 - Tailwind CSS
@@ -41,22 +44,24 @@ src/
                    station Pareto — Dashboard tab
     analysis/      Resolution-time outlier chart, Defect × Station process
                    containment analysis, flagging workflow, Tracking
-                   Dashboard, Root Cause Assist — Analysis tab
+                   Dashboard (with CSV export), Process Containment Insight — Analysis tab
     defects/       Sortable/searchable defect spreadsheet — Defects tab
     info/          Assumptions, methods, limitations — Documentation tab
-    shared/        ChartCard (shared chart frame used across tabs)
+    shared/        ChartCard, chart/status color tokens shared across tabs
   data/            defects.json (cleaned dataset) + loadDefects.ts (enrichment)
-  utils/           stats.ts (IQR), defectMetrics.ts (all chart aggregations,
-                   process-containment analysis)
+  utils/           stats.ts (IQR), defectMetrics.ts (chart aggregations,
+                   process-containment analysis), processContainmentInsightPrompt.ts +
+                   ollamaClient.ts (Task 5), csvExport.ts (Task 4)
   types/           Shared TypeScript types
   App.tsx          Sidebar navigation + view routing
   main.tsx         React entry point
 DOCUMENTATION.md   Full rationale for every chart, method, and design decision
+DELIVERABLE_MAP.md Task-by-task pointer into this codebase, for submission
 ```
 
-## Task 5 — Root Cause Assist (local LLM via Ollama)
+## Task 5 — Process Containment Insight (local LLM via Ollama)
 
-The Analysis tab's "Root Cause Assist" panel calls a **local Ollama**
+The Analysis tab's "Process Containment Insight" panel calls a **local Ollama**
 instance directly from the browser (no backend, no API key — Ollama's local
 server has none). To use it:
 
@@ -87,8 +92,10 @@ to leak, but not how you'd wire up a hosted API key in production.
 
 ## Status
 
-All tasks are implemented. Task 6 (causal inference) is documentation-only
-per direction — see `DOCUMENTATION.md`, not an in-app feature.
+All 6 tasks are complete, including Task 4's required feature (CSV export
+on the Tracking Dashboard — see `DELIVERABLE_MAP.md`). Task 6 (causal
+inference) is documentation-only per direction — see `DOCUMENTATION.md`,
+not an in-app feature.
 
 ## Data
 

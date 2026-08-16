@@ -5,7 +5,7 @@ import { MonthNavigator } from "./MonthNavigator";
 import { ResolutionTimeChart } from "./charts/ResolutionTimeChart";
 import { ProcessContainmentAnalysis } from "./ProcessContainmentAnalysis";
 import { TrackingDashboard } from "./TrackingDashboard";
-import { RootCauseAssist } from "./RootCauseAssist";
+import { ProcessContainmentInsight } from "./ProcessContainmentInsight";
 
 export function AnalysisView() {
   // Flagged-outlier store lives here — shared between the chart (which
@@ -40,7 +40,7 @@ export function AnalysisView() {
     ? new Date(`${selectedMonth}-01T00:00:00`).toLocaleDateString(undefined, { month: "long", year: "numeric" })
     : "";
 
-  // Shared between the containment table and Root Cause Assist below it —
+  // Shared between the containment table and Process Containment Insight below it —
   // the AI should always be reasoning about the exact same slice of data
   // the table is currently showing, not silently defaulting to something
   // else when the table is switched to "all time".
@@ -74,7 +74,7 @@ export function AnalysisView() {
         onScopeChange={setContainmentScope}
       />
 
-      <RootCauseAssist
+      <ProcessContainmentInsight
         flaggedItems={Object.values(flagged)}
         allDefects={defects}
         monthDefects={monthDefects}
