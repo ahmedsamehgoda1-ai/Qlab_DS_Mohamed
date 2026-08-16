@@ -40,6 +40,13 @@ export function AnalysisView() {
     ? new Date(`${selectedMonth}-01T00:00:00`).toLocaleDateString(undefined, { month: "long", year: "numeric" })
     : "";
 
+  // Shared between the containment table and Root Cause Assist below it —
+  // the AI should always be reasoning about the exact same slice of data
+  // the table is currently showing, not silently defaulting to something
+  // else when the table is switched to "all time".
+  const [containmentScope, setContainmentScope] = useState<"month" | "all-time">("month");
+  const containmentActiveLabel = containmentScope === "month" ? monthLabel : "all time";
+
   return (
     <div className="p-5 md:p-8 space-y-6">
       <MonthNavigator months={months} selectedMonth={selectedMonth} onChange={setSelectedMonth} />
@@ -53,7 +60,13 @@ export function AnalysisView() {
         onUpdateComment={handleUpdateComment}
       />
 
-      <ProcessContainmentAnalysis allDefects={defects} monthDefects={monthDefects} monthLabel={monthLabel} />
+      <ProcessContainmentAnalysis
+        allDefects={defects}
+        monthDefects={monthDefects}
+        monthLabel={monthLabel}
+        scope={containmentScope}
+        onScopeChange={setContainmentScope}
+      />
 
       <TrackingDashboard
         items={Object.values(flagged)}
@@ -63,8 +76,10 @@ export function AnalysisView() {
 
       <RootCauseAssist
         flaggedItems={Object.values(flagged)}
+        allDefects={defects}
         monthDefects={monthDefects}
-        monthLabel={monthLabel}
+        scope={containmentScope}
+        activeLabel={containmentActiveLabel}
       />
     </div>
   );

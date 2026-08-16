@@ -10,8 +10,10 @@ const DEFAULT_MODEL = "llama3.2";
 
 interface RootCauseAssistProps {
   flaggedItems: FlaggedOutlier[];
+  allDefects: DefectRecord[];
   monthDefects: DefectRecord[];
-  monthLabel: string;
+  scope: "month" | "all-time";
+  activeLabel: string;
 }
 
 type Status = "idle" | "loading" | "done" | "error";
@@ -26,18 +28,22 @@ type Status = "idle" | "loading" | "done" | "error";
  * indigo border, "AI-generated" badge) so it's unmistakably a different
  * kind of output — a synthesis, not a measurement.
  */
-export function RootCauseAssist({ flaggedItems, monthDefects, monthLabel }: RootCauseAssistProps) {
+export function RootCauseAssist({ flaggedItems, allDefects, monthDefects, scope, activeLabel }: RootCauseAssistProps) {
   const [model, setModel] = useState(DEFAULT_MODEL);
   const [status, setStatus] = useState<Status>("idle");
   const [result, setResult] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  const containmentRows = useMemo(() => computeProcessContainment(monthDefects), [monthDefects]);
+  // Same scope the containment table above is showing — reasoning about a
+  // different slice than what's on screen would be confusing to read
+  // against, so this is a controlled prop, not independent state.
+  const activeDefects = scope === "month" ? monthDefects : allDefects;
+  const containmentRows = useMemo(() => computeProcessContainment(activeDefects), [activeDefects]);
   const signalRows = containmentRows.filter((r) => r.signal !== "high-containment");
   const hasSignals = signalRows.length > 0;
 
   async function handleGenerate() {
-    const prompt = buildRootCausePrompt(containmentRows, flaggedItems);
+    const prompt = buildRootCausePrompt(containmentRows, flaggedItems, activeLabel);
     if (!prompt) return;
     setStatus("loading");
     setErrorMessage("");
@@ -66,7 +72,7 @@ export function RootCauseAssist({ flaggedItems, monthDefects, monthLabel }: Root
               </span>
             </div>
             <p className="text-[11.5px] text-slate-light">
-              Reasons about {monthLabel}'s Defect × Station signals (above) automatically — one-shot analysis, not a chatbot.
+              Reasons about {activeLabel}'s Defect × Station signals (above) automatically — one-shot analysis, not a chatbot.
             </p>
           </div>
         </div>
@@ -107,7 +113,7 @@ export function RootCauseAssist({ flaggedItems, monthDefects, monthLabel }: Root
         </button>
         {!hasSignals && (
           <span className="text-[11px] text-slate-light">
-            No potential-escape or data-quality-concern signals this month — every defect shows high containment.
+            No potential-escape or data-quality-concern signals in {activeLabel} — every defect shows high containment.
           </span>
         )}
       </div>

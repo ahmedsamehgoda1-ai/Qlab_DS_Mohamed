@@ -28,7 +28,7 @@ Color palette pulled from BMW's own site — navy, blue, white, black. Defects t
 
 ---
 
-**Task 5 (Root Cause Assist)**: local LLM via Ollama, called directly from the browser — no backend, no key to leak. Scans the Defect × Station table for escape/data-quality signals and generates an explanation for each, fresh every run. Setup in the README.
+**Task 5 (Root Cause Assist)**: local LLM via Ollama, called directly from the browser — no backend, no key to leak. Scans the Defect × Station table for escape/data-quality signals and generates an explanation for each, fresh every run — shares the same Month/All-time scope as the table above it, so it never reasons about a different slice of data than what's on screen. Setup in the README.
 
 ## Task 6 — causal inference (documentation-only, not in the app)
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -50,17 +50,19 @@ export function ProcessContainmentAnalysis({
   allDefects,
   monthDefects,
   monthLabel,
+  scope,
+  onScopeChange,
 }: {
   allDefects: DefectRecord[];
   monthDefects: DefectRecord[];
   monthLabel: string;
+  scope: "month" | "all-time";
+  onScopeChange: (scope: "month" | "all-time") => void;
 }) {
-  // Local to this chart, not tied to the shared month picker — month-level
-  // containment is what you want when investigating a specific period, but
-  // some defect types are too low-volume for a single month's numbers to
-  // mean much (see EXPECTED_STATIONS comments), so an all-time view is
-  // useful on its own terms, not just as a fallback.
-  const [scope, setScope] = useState<"month" | "all-time">("month");
+  // Scope is owned by the parent (AnalysisView), not local state here —
+  // Root Cause Assist below needs to reason about the exact same slice of
+  // data this table is showing, so both read from one shared value instead
+  // of risking the AI explaining a different scope than what's on screen.
   const activeDefects = scope === "month" ? monthDefects : allDefects;
   const activeLabel = scope === "month" ? monthLabel : "all time";
 
@@ -98,7 +100,7 @@ export function ProcessContainmentAnalysis({
           {(["month", "all-time"] as const).map((s) => (
             <button
               key={s}
-              onClick={() => setScope(s)}
+              onClick={() => onScopeChange(s)}
               className={`text-[11px] font-medium px-2.5 py-1 rounded-md transition-colors ${
                 scope === s ? "bg-white text-bmw-blue shadow-sm" : "text-slate-light hover:text-slate"
               }`}
