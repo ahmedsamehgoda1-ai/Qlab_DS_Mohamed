@@ -1,6 +1,7 @@
 const ASSUMPTIONS: string[] = [
   "Time to Resolution and Root Cause Identified are blank on the same records — assumed still unresolved, not missing data. Used elapsed-days-so-far instead of leaving them out.",
   "The xlsx had columns the PDF never mentioned (Severity Category, Resolution Date, Rework Time) — assumed they were meant to be used, not decorative, and built them into the analysis.",
+  "In the Defect × Station containment analysis, assumed the \"expected\" detection station(s) for each defect type based on manufacturing process logic — the dataset can say what happened, not what's structurally correct, so this had to be a stated assumption rather than something calculated from the data.",
 ];
 
 const OBSERVATIONS: string[] = [

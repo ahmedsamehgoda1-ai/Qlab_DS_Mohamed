@@ -60,18 +60,18 @@ export function AnalysisView() {
         onUpdateComment={handleUpdateComment}
       />
 
+      <TrackingDashboard
+        items={Object.values(flagged)}
+        onUnflag={handleUnflag}
+        onUpdateComment={handleUpdateComment}
+      />
+
       <ProcessContainmentAnalysis
         allDefects={defects}
         monthDefects={monthDefects}
         monthLabel={monthLabel}
         scope={containmentScope}
         onScopeChange={setContainmentScope}
-      />
-
-      <TrackingDashboard
-        items={Object.values(flagged)}
-        onUnflag={handleUnflag}
-        onUpdateComment={handleUpdateComment}
       />
 
       <RootCauseAssist

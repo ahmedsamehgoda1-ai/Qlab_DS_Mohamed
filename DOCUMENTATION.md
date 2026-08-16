@@ -4,6 +4,7 @@
 
 - Time to Resolution and Root Cause Identified are blank on the same records — assumed still unresolved, not missing data. Used elapsed-days-so-far instead of leaving them out or defaulting to 0.
 - The xlsx had columns the PDF never mentioned (Severity Category, Resolution Date, Rework Time). Assumed they were meant to be used, not decorative — built them into the analysis.
+- In the Defect × Station containment analysis, assumed the "expected" detection station(s) for each defect type based on manufacturing process logic (e.g. Loose Wiring → Wire Harness Installation, Electrical Test Checkpoint) rather than deriving them from the data itself — the dataset can say what happened, but not what's structurally correct, so this had to be a stated assumption rather than a calculated one.
 
 ## Things that stood out
 
@@ -30,72 +31,71 @@ Color palette pulled from BMW's own site — navy, blue, white, black. Defects t
 
 **Task 5 (Root Cause Assist)**: local LLM via Ollama, called directly from the browser — no backend, no key to leak. Scans the Defect × Station table for escape/data-quality signals and generates an explanation for each, fresh every run — shares the same Month/All-time scope as the table above it, so it never reasons about a different slice of data than what's on screen. Setup in the README.
 
-## Task 6 — causal inference (documentation-only, not in the app)
+## Task 6 — causal inference (documentation only, not built into the app)
 
-**The question, as posed**: does resolution time affect Severity Rating and
-Defect Category, and how would an X% reduction in resolution time change
-them?
+When I first read this task, my instinct was to just check if resolution
+time and severity were correlated and call it done. But then I thought
+about the actual order these things happen in, and realized the question
+has a problem before I even get to the statistics.
 
-**Why that question needs care before it can be answered**: Severity
-Rating and Defect Category are both assigned the moment a defect is
-*discovered* — before any resolution work has started. Resolution time is
-measured afterward. An effect can't happen before its cause: it isn't
-physically possible for how long a defect takes to fix to reach back and
-change what severity it was already classified as, or what kind of defect
-it already was. If a causal relationship exists here at all, it almost
-certainly runs the other way — severity/category might influence how fast
-something gets resolved (via prioritization), not the reverse. Worth
-saying directly, rather than quietly building a model that implies the
-wrong direction.
+Severity Rating and Defect Category get assigned the moment someone finds
+the defect — before anyone starts fixing it. Resolution time only exists
+after that. So resolution time can't be *causing* severity, because
+severity was already decided before the resolution clock even started. If
+anything is causing anything here, it would have to run the other way
+(severity maybe affecting how fast something gets worked on), not what the
+task describes. I think it's worth saying that plainly instead of quietly
+building a model that pretends the direction makes sense.
 
-**Testing for any relationship at all, regardless of direction** — three
-independent methods, run against the full 6,790 resolved records:
+Even so, I still wanted to check if there's at least a correlation, in
+case the task really just meant "is there a relationship" loosely rather
+than strict causation. So I ran a few tests on the 6,790 resolved records:
 
-| Method | What it tests | Result |
-|---|---|---|
-| Spearman rank correlation | resolution days vs. severity rating (ordinal 1–6) | ρ = −0.009, p = 0.47 |
-| Cramér's V | resolution-time quartile bucket vs. Defect Category (nominal, no order) | V = 0.031, p = 0.18 |
-| Cramér's V | resolution-time quartile bucket vs. severity, treated as nominal (robustness check on Spearman's ordinal assumption) | V = 0.026, p = 0.53 |
+- **Spearman correlation** between resolution days and severity rating,
+  since severity is ordinal (1 to 6), not a normal numeric scale. Got
+  ρ = −0.009, p = 0.47. Basically zero, and nowhere near significant.
+- I also wanted to check Defect Category, but Category doesn't have an
+  order — Electrical, Cosmetic, Safety aren't "higher" or "lower" than
+  each other — so Spearman doesn't really apply there. I looked into what
+  the right test would be and found **Cramér's V**, used for two
+  categorical variables. To use it I had to first turn resolution time
+  into a categorical thing myself, by splitting it into quartiles
+  (fastest 25%, next 25%, and so on). Got V = 0.031, p = 0.18 — again,
+  basically nothing.
+- Just to double-check my Spearman result wasn't hiding something because
+  of the ordinal assumption, I ran Cramér's V on severity too (treating it
+  as if it had no order), and got V = 0.026, p = 0.53. Same story again.
 
-Cramér's V needed resolution time binned into quartiles first (fastest 25%
-→ slowest 25%) so both sides of the comparison are categorical — it's a
-chi-square-based association strength on a 0–1 scale, where 0 means no
-association and 1 means perfect association. Both values here are close
-enough to 0 to call negligible. All three methods agree, from genuinely
-different angles (a rank correlation, a categorical-association test, and
-a repeat of that test with the ordinal assumption removed): **resolution
-time and severity/category are statistically independent** in this
-dataset. Combined with the temporal-ordering problem above, the honest
-answer to "does resolution time affect severity/category" is that it
-can't, and empirically, it doesn't correlate with them either.
+So three different tests, from three different angles, and none of them
+found anything. Going in, I actually expected at least a small
+relationship — I assumed maybe more severe defects take longer to fix
+because they're harder, or shorter because they're more urgent. The data
+just doesn't back either version up.
 
-**Reframing "X% reduction" as a decision-support question.** Since there's
-no relationship to project through, simulating "if resolution time
-dropped by X%, severity would shift by Y" would manufacture a causal claim
-the data doesn't support. What *can* legitimately be asked instead: if the
-plant tightened its resolution-time SLA, which kinds of defects would that
-newly flag as non-compliant? Using the same IQR upper fence the Analysis
-tab uses (0.98 days) as the baseline "acceptable" resolution time:
+For the "how would reducing resolution time by X% affect severity" part —
+since there isn't an actual relationship, it didn't feel honest to
+simulate "cut time by X% → severity shifts by Y%," because that would
+basically be inventing a relationship that isn't there. So I reframed it
+into something I could actually check: if the SLA (the acceptable
+resolution time) got tightened by X%, which defects would suddenly count
+as late? I used 0.98 days as the baseline — the same outlier threshold the
+Analysis tab already uses — and tried tightening it by 10%, 25%, and 50%.
 
-| SLA tightened by | New target | Resolved records that would breach it | Of those, high-severity (rating 1–2) | Of those, critical/safety category |
+| SLA tightened by | New target | Records that would now be late | Of those, high-severity | Of those, critical/safety |
 |---|---|---|---|---|
-| 10% | 0.88 days | 696 (10.3% of resolved) | 8.6% | 1.0% |
+| 10% | 0.88 days | 696 (10.3%) | 8.6% | 1.0% |
 | 25% | 0.74 days | 830 (12.2%) | 9.0% | 1.0% |
 | 50% | 0.49 days | 1,718 (25.3%) | 8.5% | 1.1% |
 
-For comparison, of the 2,210 currently-open defects: 8.2% are
-high-severity, 0.5% are critical/safety — nearly identical to every breach
-tier above, at every tightness level tested.
+No matter how much I tightened the threshold, the share of "late" defects
+that were high-severity or critical/safety barely moved — it stayed around
+8.5–9% and 1% every time. For comparison, the currently-open defects sit
+at 8.2% and 0.5%, basically the same.
 
-**Why this matters for a decision**: the severity/category mix of "slow"
-defects stays essentially constant no matter how aggressively the SLA is
-tightened — the data-side confirmation of the statistical null result
-above. That's also an operationally interesting finding in its own right:
-resolution speed does not currently appear to be prioritized by severity
-at all. A critical/safety-category defect is resolved on roughly the same
-timeline as a cosmetic one. Whether that's intentional (an automated or
-parallelized process where severity doesn't affect queue position) or a
-genuine gap worth fixing (should critical defects be fast-tracked?) is a
-real question for quality leadership — one this analysis surfaces cleanly,
-which a naively-built "resolution time causes severity" model would have
-obscured rather than revealed.
+I think that's actually a more interesting finding than I expected going
+in. It suggests resolution speed isn't really being prioritized by
+severity right now — a critical safety issue takes about as long to fix as
+a minor cosmetic one. That could be totally fine if the process is
+automated and doesn't need manual triage, but it's also the kind of thing
+I'd want to flag to whoever manages quality, since you'd usually expect
+the more serious stuff to get handled first.
