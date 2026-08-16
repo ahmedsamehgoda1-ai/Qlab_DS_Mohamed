@@ -1,5 +1,12 @@
 # BMW QLab — Documentation & Walkthrough
 
+
+## Assumptions
+
+- Time to Resolution and Root Cause Identified are blank on the same records — assumed still unresolved, not missing data. Used elapsed-days-so-far instead of leaving them out or defaulting to 0.
+- The xlsx had columns the PDF never mentioned (Severity Category, Resolution Date, Rework Time). Assumed they were meant to be used, not decorative — built them into the analysis.
+- In the Defect × Station containment analysis, assumed the "expected" detection station(s) for each defect type based on manufacturing process logic (e.g. Loose Wiring → Wire Harness Installation, Electrical Test Checkpoint) rather than deriving them from the data itself — the dataset can say what happened, but not what's structurally correct, so this had to be a stated assumption rather than a calculated one.
+
 ## AI tools used
 
 I used two different AI tools for two different parts of this project.
@@ -19,13 +26,6 @@ noise in defect/station names, the rework-time observation). From there,
 Claude was for building — turning those findings into the actual dashboard,
 the outlier detection, and the containment analysis, based on decisions I
 made along the way, not decisions the AI made for me.
-
-## Assumptions
-
-- Time to Resolution and Root Cause Identified are blank on the same records — assumed still unresolved, not missing data. Used elapsed-days-so-far instead of leaving them out or defaulting to 0.
-- The xlsx had columns the PDF never mentioned (Severity Category, Resolution Date, Rework Time). Assumed they were meant to be used, not decorative — built them into the analysis.
-- In the Defect × Station containment analysis, assumed the "expected" detection station(s) for each defect type based on manufacturing process logic (e.g. Loose Wiring → Wire Harness Installation, Electrical Test Checkpoint) rather than deriving them from the data itself — the dataset can say what happened, but not what's structurally correct, so this had to be a stated assumption rather than a calculated one.
-
 ## Things that stood out
 
 - Heavy typo/name manipulation in `defectName` and `station` — 237/35 raw strings for what were really only 15/29 true values. Cleaned once at data-generation time.
