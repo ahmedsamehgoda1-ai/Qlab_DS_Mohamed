@@ -1,5 +1,12 @@
 # BMW QLab — Documentation & Walkthrough
 
+
+
+## Assumptions
+
+- Time to Resolution and Root Cause Identified are blank on the same records — assumed still unresolved, not missing data. Used elapsed-days-so-far instead of leaving them out or defaulting to 0.
+- The xlsx had columns the PDF never mentioned (Severity Category, Resolution Date, Rework Time). Assumed they were meant to be used, not decorative — built them into the analysis.
+- In the Defect × Station containment analysis, assumed the "expected" detection station(s) for each defect type based on manufacturing process logic (e.g. Loose Wiring → Wire Harness Installation, Electrical Test Checkpoint) rather than deriving them from the data itself — the dataset can say what happened, but not what's structurally correct, so this had to be a stated assumption rather than a calculated one.
 ## AI tools used
 
 I used two different AI tools for two different parts of this project.
@@ -13,18 +20,7 @@ First prompt I sent to ChatGPT, to start exploring the dataset:
 > "I want you to do full and complete analysis on the dataset attached.
 > Show the trends, correlations, Anomalies and a final review for it."
 
-That initial pass is what pointed me toward things like the resolution-time
-skew and some of the odd patterns I dug into further myself (the typo
-noise in defect/station names, the rework-time observation). From there,
-Claude was for building — turning those findings into the actual dashboard,
-the outlier detection, and the containment analysis, based on decisions I
-made along the way, not decisions the AI made for me.
-
-## Assumptions
-
-- Time to Resolution and Root Cause Identified are blank on the same records — assumed still unresolved, not missing data. Used elapsed-days-so-far instead of leaving them out or defaulting to 0.
-- The xlsx had columns the PDF never mentioned (Severity Category, Resolution Date, Rework Time). Assumed they were meant to be used, not decorative — built them into the analysis.
-- In the Defect × Station containment analysis, assumed the "expected" detection station(s) for each defect type based on manufacturing process logic (e.g. Loose Wiring → Wire Harness Installation, Electrical Test Checkpoint) rather than deriving them from the data itself — the dataset can say what happened, but not what's structurally correct, so this had to be a stated assumption rather than a calculated one.
+That initial pass is what pointed me toward things like the resolution-time skew and some of the odd patterns I dug into further myself (the typo noise in defect/station names, the rework-time observation). From there, Claude was for building — turning those findings into the actual dashboard, the outlier detection, and the containment analysis, based on decisions and ideas I made along the way.
 
 ## Things that stood out
 
