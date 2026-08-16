@@ -79,7 +79,12 @@ export function TrackingDashboard({ items, onUnflag, onUpdateComment }: Tracking
       item.partNumber,
       item.days.toFixed(2),
       item.date,
-      new Date(item.flaggedAt).toLocaleDateString(),
+      // ISO date (YYYY-MM-DD), not toLocaleDateString() — a locale-formatted
+      // date like "8/16/2026" gets auto-detected by Excel on CSV import,
+      // which then applies its own date display format wider than the
+      // default column width, showing "#####" instead of the value. ISO
+      // format avoids that ambiguity and matches the Date column already.
+      new Date(item.flaggedAt).toISOString().slice(0, 10),
       "Flagged for review",
       item.comment,
     ]);
