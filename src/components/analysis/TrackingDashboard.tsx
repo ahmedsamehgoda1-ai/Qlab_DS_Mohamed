@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
-import { ArrowUp, ArrowDown, ArrowUpDown, Search, Flag } from "lucide-react";
+import { ArrowUp, ArrowDown, ArrowUpDown, Search, Flag, Download } from "lucide-react";
 import { FlaggedOutlier, SortDirection } from "@/types";
 import { STATUS_RED } from "@/components/shared/statusColors";
+import { buildCsv, downloadCsv } from "@/utils/csvExport";
 
 type SortKey = "defectName" | "station" | "days" | "date" | "flaggedAt";
 
@@ -23,7 +24,10 @@ interface TrackingDashboardProps {
  * Dedicated tracking panel for every defect flagged for review from the
  * resolution-time chart. Updates dynamically as items are flagged/unflagged
  * (it's just rendering whatever's in the shared `flagged` store), and
- * supports searching (including by part number) and sorting per column.
+ * supports searching (including by part number), sorting per column, and
+ * exporting the current view to CSV — Task 4's feature, built directly
+ * against the "flags reset on refresh" limitation: exporting gives a way to
+ * keep a record outside the app until real persistence exists.
  */
 export function TrackingDashboard({ items, onUnflag, onUpdateComment }: TrackingDashboardProps) {
   const [search, setSearch] = useState("");
@@ -64,6 +68,26 @@ export function TrackingDashboard({ items, onUnflag, onUpdateComment }: Tracking
     }
   }
 
+  // Exports exactly what's currently on screen — respects the active
+  // search/sort, so "export" means "export what I'm looking at right now,"
+  // not a silent full dump that ignores whatever the user just filtered to.
+  function handleExport() {
+    const headers = ["Defect Name", "Station", "Part Number", "Days", "Date", "Flagged At", "Status", "Comment"];
+    const rows = sorted.map((item) => [
+      item.defectName,
+      item.station,
+      item.partNumber,
+      item.days.toFixed(2),
+      item.date,
+      new Date(item.flaggedAt).toLocaleDateString(),
+      "Flagged for review",
+      item.comment,
+    ]);
+    const csv = buildCsv(headers, rows);
+    const timestamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(`tracking-dashboard-${timestamp}.csv`, csv);
+  }
+
   return (
     <div className="bg-white border border-hairline rounded-xl overflow-hidden">
       <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-hairline flex-wrap">
@@ -72,15 +96,24 @@ export function TrackingDashboard({ items, onUnflag, onUpdateComment }: Tracking
           <h3 className="text-[14px] font-semibold text-ink">Tracking Dashboard</h3>
           <span className="text-[11px] text-slate-light">{items.length} flagged for review</span>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-64 rounded-lg border border-hairline bg-paper px-3 py-1.5 focus-within:border-bmw-blue transition-colors">
-          <Search size={13} className="text-slate-light shrink-0" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search flagged, part #…"
-            className="w-full text-[12px] bg-transparent outline-none placeholder:text-slate-light"
-          />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-2 flex-1 sm:w-64 rounded-lg border border-hairline bg-paper px-3 py-1.5 focus-within:border-bmw-blue transition-colors">
+            <Search size={13} className="text-slate-light shrink-0" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search flagged, part #…"
+              className="w-full text-[12px] bg-transparent outline-none placeholder:text-slate-light"
+            />
+          </div>
+          <button
+            onClick={handleExport}
+            disabled={sorted.length === 0}
+            className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-lg border border-hairline text-slate hover:border-bmw-blue hover:text-bmw-blue disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+          >
+            <Download size={13} /> Export CSV
+          </button>
         </div>
       </div>
 

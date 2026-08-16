@@ -1,12 +1,5 @@
 # BMW QLab — Documentation & Walkthrough
 
-
-## Assumptions
-
-- Time to Resolution and Root Cause Identified are blank on the same records — assumed still unresolved, not missing data. Used elapsed-days-so-far instead of leaving them out or defaulting to 0.
-- The xlsx had columns the PDF never mentioned (Severity Category, Resolution Date, Rework Time). Assumed they were meant to be used, not decorative — built them into the analysis.
-- In the Defect × Station containment analysis, assumed the "expected" detection station(s) for each defect type based on manufacturing process logic (e.g. Loose Wiring → Wire Harness Installation, Electrical Test Checkpoint) rather than deriving them from the data itself — the dataset can say what happened, but not what's structurally correct, so this had to be a stated assumption rather than a calculated one.
-
 ## AI tools used
 
 I used two different AI tools for two different parts of this project.
@@ -23,8 +16,15 @@ First prompt I sent to ChatGPT, to start exploring the dataset:
 That initial pass is what pointed me toward things like the resolution-time
 skew and some of the odd patterns I dug into further myself (the typo
 noise in defect/station names, the rework-time observation). From there,
-Claude was for building, turning those findings into the actual dashboard,
-the outlier detection, and the containment analysis, based on decisions and the ideas I made along the way.
+Claude was for building — turning those findings into the actual dashboard,
+the outlier detection, and the containment analysis, based on decisions I
+made along the way, not decisions the AI made for me.
+
+## Assumptions
+
+- Time to Resolution and Root Cause Identified are blank on the same records — assumed still unresolved, not missing data. Used elapsed-days-so-far instead of leaving them out or defaulting to 0.
+- The xlsx had columns the PDF never mentioned (Severity Category, Resolution Date, Rework Time). Assumed they were meant to be used, not decorative — built them into the analysis.
+- In the Defect × Station containment analysis, assumed the "expected" detection station(s) for each defect type based on manufacturing process logic (e.g. Loose Wiring → Wire Harness Installation, Electrical Test Checkpoint) rather than deriving them from the data itself — the dataset can say what happened, but not what's structurally correct, so this had to be a stated assumption rather than a calculated one.
 
 ## Things that stood out
 
@@ -161,7 +161,13 @@ its own type. I'd want to compute this per defect type if I had more time
 same limitation showing up twice.
 
 Flagged items reset every time the page refreshes — they only live in
-React state right now, with nothing persisting them.
+React state right now, with nothing persisting them. This is the one I
+actually built something for: Task 4 wants a feature motivated by the
+limitations, and this is the most direct one to act on. The Tracking
+Dashboard now has an Export CSV button — it doesn't fix the underlying
+problem (no real backend), but it means a flagged list doesn't just
+vanish if the tab closes; you can keep a record outside the app until
+real persistence exists.
 
 I split resolved and unresolved resolution times into two separate views
 instead of pooling them into one chart, because unresolved records use
