@@ -14,7 +14,7 @@ const GRAPH_CHOICES: string[] = [
   "Top 5 defects (pie) — one chart, tells you the biggest problems immediately.",
   "Severity distribution — a sanity check more than deep analysis, keeps an eye on whether the mix looks normal.",
   "Defect rate by variant — general-purpose baseline coverage the brief asks for.",
-  "Station Pareto — shows which stations carry the most volume; picked this format after seeing it explained (cumulative-% line, \"vital few vs. trivial many\").",
+  "Station Pareto — shows which stations carry the most volume; picked this format after seeing it explained.",
   "Time to resolution — the most time spent here. Goal: explain why a defect took longer than it should, not just flag that it did. Right-skewed, so IQR with only the upper fence. Wanted this broken out per defect type rather than pooled — didn't get to fully build that out.",
   "Defect × Station (process containment) — wanted to understand the factory's actual process: what stations should catch a defect before Final Quality. Some defects appeared to escape their expected station and only surface downstream.",
 ];
