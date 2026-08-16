@@ -25,6 +25,13 @@ const NOT_BUILT: string[] = [
   "Risk factor score — wanted to combine severity, frequency, and containment into one score; didn't have time to work out the method.",
 ];
 
+const LIMITATIONS: string[] = [
+  "No real knowledge of BMW's actual manufacturing stages — the \"expected station\" per defect in the Defect × Station analysis is my best guess from station names and general car-building knowledge, not a verified process map.",
+  "Outlier detection on resolution time pools all defect types together (per month, per resolved/open status) — some defect types are naturally slower to fix than others, so a fast type could get flagged too easily and a slow type might not get flagged when it should. Same limitation as the \"wanted this per defect type\" note under Graph choices.",
+  "Flagged items reset on page refresh — they only live in React state, nothing persists them.",
+  "Resolved and unresolved resolution times are kept as two separate views rather than one combined chart, because unresolved records use \"days elapsed so far,\" which runs as high as 467 days for some records. Combining them would pull the mean from ~1.35 days (resolved only) to ~67 days — not a real resolution time, just distorting the chart.",
+];
+
 export function InfoView() {
   return (
     <div className="p-5 md:p-8 max-w-3xl space-y-6">
@@ -98,15 +105,15 @@ export function InfoView() {
       </div>
 
       <div className="bg-white border border-hairline rounded-xl p-6">
-        <h3 className="text-[14px] font-semibold text-ink mb-2">Limitations & robustness</h3>
-        <p className="text-[13px] text-slate leading-relaxed">
-          Dataset is a static JSON import, not a paginated API. Flags/comments live only in React
-          state — lost on refresh. Only 5 reporters exist, so a by-reporter breakdown was left out
-          as near-meaningless. Pipeline is strongly typed end-to-end, and the IQR/containment logic
-          are pure functions reused identically across every view, so results can't quietly
-          diverge between charts. In production: persist flags to a backend with an audit trail,
-          paginate the dataset, add user accounts.
-        </p>
+        <h3 className="text-[14px] font-semibold text-ink mb-3">Limitations</h3>
+        <ul className="space-y-2">
+          {LIMITATIONS.map((item) => (
+            <li key={item} className="flex gap-2 text-[13px] text-slate leading-relaxed">
+              <span className="text-bmw-blue shrink-0">▸</span>
+              {item}
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );

@@ -27,6 +27,41 @@
 
 Color palette pulled from BMW's own site — navy, blue, white, black. Defects tab is split from Dashboard/Analysis on purpose: a full spreadsheet next to a page of charts gets cluttered fast. Analysis groups everything investigative (outlier detection, containment, flagging, Root Cause Assist) separately from the Dashboard's at-a-glance overview.
 
+## Limitations
+
+I don't actually know BMW's real manufacturing process — I don't have any
+documentation on what stages a car actually goes through before it's
+finished. So for the Defect × Station analysis, the "expected station" for
+each defect is my best guess based on the station names themselves and
+general knowledge of how a car gets built, not something I could verify
+against a real process map. If I actually had that documentation, I think
+the mapping would be more accurate than what I came up with on my own.
+
+For the outlier detection on resolution time, I'm using one IQR fence
+across all defect types pooled together (per month, per resolved/open
+status). But some defect types are just naturally slower to fix than
+others — not because anything's wrong, just because of what the defect is
+— so pooling everything together isn't fully fair to either side. A defect
+type that's normally fast could get flagged too easily, and one that's
+normally slow might not get flagged even when it's genuinely unusual for
+its own type. I'd want to compute this per defect type if I had more time
+— I mentioned this same thing under Graph choices, since it's really the
+same limitation showing up twice.
+
+Flagged items reset every time the page refreshes — they only live in
+React state right now, with nothing persisting them.
+
+I split resolved and unresolved resolution times into two separate views
+instead of pooling them into one chart, because unresolved records use
+"days elapsed so far," and some of those numbers get huge since a record
+can have been open a long time. If I combined them, the mean resolution
+time would jump from about 1.35 days (resolved only) to almost 67 days,
+because the elapsed-so-far values for open records run as high as 467
+days. That's not a real resolution time, it's just how long something's
+been sitting open — mixing it in would skew everything incredibly far
+right and make the whole chart harder to read and less honest about what
+it's actually showing.
+
 ---
 
 **Task 5 (Root Cause Assist)**: local LLM via Ollama, called directly from the browser — no backend, no key to leak. Scans the Defect × Station table for escape/data-quality signals and generates an explanation for each, fresh every run — shares the same Month/All-time scope as the table above it, so it never reasons about a different slice of data than what's on screen. Setup in the README.
