@@ -1,16 +1,8 @@
-import {
-  ComposedChart,
-  Bar,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  ResponsiveContainer,
-} from "recharts";
+import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 import { DefectRecord } from "@/types";
 import { severityDistribution } from "@/utils/defectMetrics";
 import { ChartCard } from "@/components/shared/ChartCard";
+import { AXIS_LINE_COLOR, GRID_COLOR, AXIS_TICK_STYLE, TOOLTIP_STYLE } from "@/components/shared/chartTheme";
 
 /**
  * Severity Rating in the source data is an INVERTED scale: 1 is the most
@@ -29,20 +21,20 @@ export function SeverityBellChart({ defects }: { defects: DefectRecord[] }) {
     >
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={data} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#EEF1F5" />
+          <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} />
           <XAxis
             dataKey="label"
-            tick={{ fontSize: 11, fill: "#5B6B7C" }}
-            stroke="#E4E9EF"
+            tick={AXIS_TICK_STYLE}
+            stroke={AXIS_LINE_COLOR}
             label={{ value: "Severity rating (1 = most extreme)", position: "insideBottom", offset: -2, fontSize: 10, fill: "#9FB0C3" }}
           />
-          <YAxis tick={{ fontSize: 11, fill: "#5B6B7C" }} stroke="#E4E9EF" />
+          <YAxis tick={AXIS_TICK_STYLE} stroke={AXIS_LINE_COLOR} />
           <Tooltip
             formatter={(value) => [`${Number(value).toLocaleString()} defects`, "Count"]}
             labelFormatter={(label, payload) =>
               `Rating ${label} — ${(payload?.[0]?.payload as any)?.category ?? ""}`
             }
-            contentStyle={{ fontSize: 12, borderRadius: 8, borderColor: "#E4E9EF" }}
+            contentStyle={TOOLTIP_STYLE}
           />
           <Bar dataKey="count" fill="#16B8A6" fillOpacity={0.25} radius={[4, 4, 0, 0]} />
           <Line

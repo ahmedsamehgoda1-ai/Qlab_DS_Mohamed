@@ -20,8 +20,6 @@ const PLOT_RIGHT = VB_WIDTH - PAD_X;
 
 // No box plot anymore — outlier band and bubble band now split the freed
 // vertical space between them.
-const OUTLIER_BAND_Y = 56;
-const OUTLIER_BAND_HEIGHT = 56;
 const BUBBLE_BAND_Y = 172;
 const BUBBLE_BAND_HEIGHT = 168;
 const AXIS_Y = 258;
@@ -396,7 +394,7 @@ export function ResolutionTimeChart({
 
             {visibleOutliers.map((o: ResolutionOutlierPoint) => {
               const cx = x(o.days);
-              const cy = OUTLIER_BAND_Y + (o.jitter - 0.5) * (OUTLIER_BAND_HEIGHT - 10);
+              const cy = BUBBLE_BAND_Y + (o.jitter - 0.5) * (BUBBLE_BAND_HEIGHT - 10);
               const isFlagged = Boolean(flagged[o.id]);
               const color = isFlagged ? "#E4443A" : "#F2B705";
               const hoverLines = [

@@ -3,7 +3,7 @@ import { defects } from "@/data/loadDefects";
 import { FlaggedOutlier } from "@/types";
 import { MonthNavigator } from "./MonthNavigator";
 import { ResolutionTimeChart } from "./charts/ResolutionTimeChart";
-import { DefectStationMatrix } from "./DefectStationMatrix";
+import { ProcessContainmentAnalysis } from "./ProcessContainmentAnalysis";
 import { TrackingDashboard } from "./TrackingDashboard";
 import { RootCauseAssist } from "./RootCauseAssist";
 
@@ -53,7 +53,7 @@ export function AnalysisView() {
         onUpdateComment={handleUpdateComment}
       />
 
-      <DefectStationMatrix defects={monthDefects} monthLabel={monthLabel} />
+      <ProcessContainmentAnalysis allDefects={defects} monthDefects={monthDefects} monthLabel={monthLabel} />
 
       <TrackingDashboard
         items={Object.values(flagged)}

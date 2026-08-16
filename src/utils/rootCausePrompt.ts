@@ -1,33 +1,51 @@
-import { DefectRecord, FlaggedOutlier } from "@/types";
-import { computeDefectStationMatrix, findMatrixCell } from "./defectMetrics";
+import { FlaggedOutlier } from "@/types";
+import { ProcessContainmentRow } from "./defectMetrics";
 
 /**
  * Builds the prompt for the Root Cause Assist panel (Task 5).
  *
- * Deliberately leverages TWO existing analyses rather than raw data alone:
- * the human-written flag comments (Task 3) and the chi-square anomaly
- * matrix (adjusted residual per defect/station combo) — cross-referencing
- * them is the "1-2 steps further" the brief asks for, and isn't something
- * either analysis does on its own.
+ * Focused on the Defect x Station process-containment analysis (§5) — the
+ * app's own domain-mapped "expected station" assumption tells you WHICH
+ * defects show a potential-escape or data-quality-concern signal, but not
+ * WHY. That "why" is exactly what's handed to the LLM to reason about,
+ * fresh each time, rather than pre-written: the app supplies only the
+ * station names/percentages already on screen, never a canned explanation.
+ *
+ * Also cross-references flagged items (Task 3) for any of these same
+ * defects when available, so it leverages both existing analytics and
+ * human-flagged data — but isn't gated on flags existing, since the
+ * containment analysis alone is always enough to reason about.
  */
-export function buildRootCausePrompt(flaggedItems: FlaggedOutlier[], monthDefects: DefectRecord[]): string {
-  const matrix = computeDefectStationMatrix(monthDefects);
+export function buildRootCausePrompt(
+  containmentRows: ProcessContainmentRow[],
+  flaggedItems: FlaggedOutlier[]
+): string | null {
+  const signalRows = containmentRows.filter((r) => r.signal !== "high-containment");
+  if (signalRows.length === 0) return null;
 
-  const lines = flaggedItems.map((item) => {
-    const cell = findMatrixCell(matrix, item.defectName, item.station);
-    const arText = cell
-      ? `AR=${cell.ar.toFixed(1)}${cell.lowSample ? " (low sample, unreliable)" : ""}`
-      : "no matrix data";
-    const comment = item.comment.trim() || "(no comment left)";
-    return `- "${item.defectName}" at "${item.station}", ${item.days.toFixed(2)} days to resolve, engineer's note: "${comment}" — station anomaly ${arText}`;
+  const rowLines = signalRows.map((r) => {
+    const stations = r.stationBreakdown
+      .slice(0, 6)
+      .map((s) => `${s.station} (${s.pct.toFixed(1)}%, n=${s.count})`)
+      .join("; ");
+    const expected = r.expectedStations.map((s) => s.station).join(", ") || "none mapped";
+
+    const relatedFlags = flaggedItems.filter((f) => f.defectName === r.defect);
+    const flagText =
+      relatedFlags.length > 0
+        ? ` Engineer-flagged example(s): ${relatedFlags
+            .map((f) => `"${f.station}"${f.comment.trim() ? ` — note: "${f.comment.trim()}"` : ""}`)
+            .join("; ")}.`
+        : "";
+
+    return `- ${r.defect} [signal: ${r.signal}] — total ${r.total} cases, containment ${r.processContainmentPct.toFixed(1)}%, Final Quality ${r.finalQualityPct.toFixed(1)}%, other ${r.otherPct.toFixed(1)}%. Expected stations (domain-mapped): ${expected}. Full station breakdown: ${stations}.${flagText}`;
   });
 
-  return `You are assisting a BMW quality engineer investigating flagged production defects.
+  return `You are assisting a BMW quality engineer reviewing a Defect x Station process-containment analysis.
 
-Below are defects an engineer has manually flagged as anomalies this month, each cross-referenced with an adjusted standardized residual (AR) from a defect x station chi-square anomaly matrix. AR > 2 means that defect/station combination happens notably more often than the plant's overall rates would predict; AR < -2 means notably less.
+Below are the defect types this month whose detection pattern raised a signal — "potential-escape" means a large share of cases are only caught at Final Quality (the shared downstream checkpoint) instead of their own expected station(s); "data-quality-concern" means most cases were caught at stations that have no domain-mapped connection to that defect type at all.
 
-Flagged items:
-${lines.join("\n")}
+${rowLines.join("\n")}
 
-Task: identify any likely common root cause(s) linking two or more of these flagged items — a shared station, a shared defect type, or a pattern across the engineers' notes. Be short (under 100 words total), factual, and specific: reference the actual defect/station names and AR values given, don't invent details not present above. Output 2-4 short bullet points. If the items don't share an obvious common cause, say so plainly in one line instead of speculating. Do not add pleasantries, disclaimers, or ask follow-up questions — this is a one-shot analysis, not a conversation.`;
+Task: for each defect listed, give a short, plausible, factual explanation of WHY that pattern might be occurring — grounded only in the station names and percentages given above, never invented. For a data-quality-concern defect, say directly whether the pattern reads more like a real production issue or a station-logging/process-mapping problem. Be short: under 130 words total, 1-2 bullet points per defect. Do not add pleasantries, disclaimers, or ask follow-up questions — this is a one-shot analysis, not a conversation.`;
 }

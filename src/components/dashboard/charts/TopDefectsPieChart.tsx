@@ -1,16 +1,8 @@
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { DefectRecord } from "@/types";
 import { topDefectsPie } from "@/utils/defectMetrics";
 import { ChartCard } from "@/components/shared/ChartCard";
-
-const COLORS = ["#1C69D4", "#16B8A6", "#5B6EF5", "#4FA8E8", "#0E4C8C", "#9FB0C3"];
+import { TOOLTIP_STYLE, CHART_PALETTE } from "@/components/shared/chartTheme";
 
 export function TopDefectsPieChart({ defects }: { defects: DefectRecord[] }) {
   const data = topDefectsPie(defects, 5);
@@ -35,7 +27,7 @@ export function TopDefectsPieChart({ defects }: { defects: DefectRecord[] }) {
             paddingAngle={1.5}
           >
             {data.map((entry, i) => (
-              <Cell key={entry.name} fill={COLORS[i % COLORS.length]} />
+              <Cell key={entry.name} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />
             ))}
           </Pie>
           <Tooltip
@@ -43,7 +35,7 @@ export function TopDefectsPieChart({ defects }: { defects: DefectRecord[] }) {
               `${Number(value).toLocaleString()} (${((Number(value) / total) * 100).toFixed(1)}%)`,
               name,
             ]}
-            contentStyle={{ fontSize: 12, borderRadius: 8, borderColor: "#E4E9EF" }}
+            contentStyle={TOOLTIP_STYLE}
           />
           <Legend wrapperStyle={{ fontSize: 11 }} iconSize={8} />
         </PieChart>

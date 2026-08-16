@@ -12,8 +12,8 @@ data-cleaning discovery, and Task 6's causal inference analysis.
 - Tailwind CSS
 - lucide-react (icons)
 - recharts (Dashboard tab charts)
-- Custom SVG (Analysis tab's outlier chart and Defect × Station matrix —
-  recharts doesn't support these directly; see DOCUMENTATION.md §3–5)
+- Custom SVG (Analysis tab's outlier chart — recharts doesn't support this
+  directly; see DOCUMENTATION.md)
 
 ## Getting started
 
@@ -39,14 +39,15 @@ src/
     layout/       Sidebar, Topbar, status chip
     dashboard/     KPI cards, Top 5 pie, severity chart, defect-rate breakdown,
                    station Pareto — Dashboard tab
-    analysis/      Resolution-time outlier chart, Defect × Station anomaly
-                   matrix, flagging workflow, Tracking Dashboard — Analysis tab
+    analysis/      Resolution-time outlier chart, Defect × Station process
+                   containment analysis, flagging workflow, Tracking
+                   Dashboard, Root Cause Assist — Analysis tab
     defects/       Sortable/searchable defect spreadsheet — Defects tab
-    info/          Reference info + in-app reflection — Info tab
+    info/          Assumptions, methods, limitations — Documentation tab
     shared/        ChartCard (shared chart frame used across tabs)
   data/            defects.json (cleaned dataset) + loadDefects.ts (enrichment)
   utils/           stats.ts (IQR), defectMetrics.ts (all chart aggregations,
-                   chi-square residual analysis)
+                   process-containment analysis)
   types/           Shared TypeScript types
   App.tsx          Sidebar navigation + view routing
   main.tsx         React entry point
@@ -76,23 +77,24 @@ allowed:
 OLLAMA_ORIGINS=http://localhost:5173 ollama serve
 ```
 
-The panel is disabled until at least one outlier is flagged in the
-Analysis tab (Task 3's workflow) — it synthesizes flagged items against
-the Defect × Station anomaly matrix, not raw data alone. Calling the LLM
-directly from the browser is a demo-only trade-off (documented in
-`DOCUMENTATION.md`) — fine here since Ollama has no secret to leak, but not
-how you'd wire up a hosted API key in production.
+The panel is disabled when no defect shows a `potential-escape` or
+`data-quality-concern` signal in the Defect × Station table above it — it
+reasons about that table's own numbers, not raw data alone, and folds in
+any engineer-flagged items (Task 3) for the same defects when present.
+Calling the LLM directly from the browser is a demo-only trade-off
+(documented in `DOCUMENTATION.md`) — fine here since Ollama has no secret
+to leak, but not how you'd wire up a hosted API key in production.
 
 ## Status
 
 All tasks are implemented. Task 6 (causal inference) is documentation-only
-per direction — see `DOCUMENTATION.md` §9, not an in-app feature.
+per direction — see `DOCUMENTATION.md`, not an in-app feature.
 
 ## Data
 
 `src/data/defects.json` is generated from
 `Quality_Notional_Data_v2_resolution_variation_final.xlsx` via a Python
 script (pandas/openpyxl) that also canonicalizes the `defectName` and
-`station` fields — see `DOCUMENTATION.md` §1 for why that's necessary (the
+`station` fields — see `DOCUMENTATION.md` for why that's necessary (the
 raw data has 237/35 distinct strings for what are really only 15/29 true
 values, due to deliberately injected typo noise).

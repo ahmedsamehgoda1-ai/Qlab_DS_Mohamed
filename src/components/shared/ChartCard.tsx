@@ -12,7 +12,15 @@ interface ChartCardProps {
   children: ReactNode;
 }
 
-/** Shared frame for every dashboard chart: title, color dot, optional info tooltip and header control. */
+/**
+ * Shared frame for every chart: title, color dot, optional info tooltip,
+ * optional header control (rightSlot). Pulled out once every chart started
+ * repeating the same title bar + hover-tooltip markup — a genuine change
+ * here (e.g. the info-tooltip styling) now happens once instead of once
+ * per chart file. `infoText` exists specifically so each chart's "why this
+ * method" explanation lives next to that chart's own code, not buried in
+ * this shared file.
+ */
 export function ChartCard({
   title,
   accent = "blue",

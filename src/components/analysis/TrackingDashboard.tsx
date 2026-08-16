@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { ArrowUp, ArrowDown, ArrowUpDown, Search, Flag } from "lucide-react";
 import { FlaggedOutlier, SortDirection } from "@/types";
+import { STATUS_RED } from "@/components/shared/statusColors";
 
 type SortKey = "defectName" | "station" | "days" | "date" | "flaggedAt";
 
@@ -26,6 +27,8 @@ interface TrackingDashboardProps {
  */
 export function TrackingDashboard({ items, onUnflag, onUpdateComment }: TrackingDashboardProps) {
   const [search, setSearch] = useState("");
+  // Newest-flagged-first by default: whatever an engineer just flagged is
+  // what they're most likely checking on next, not an old item from weeks ago.
   const [sortKey, setSortKey] = useState<SortKey>("flaggedAt");
   const [sortDir, setSortDir] = useState<SortDirection>("desc");
 
@@ -137,7 +140,10 @@ export function TrackingDashboard({ items, onUnflag, onUpdateComment }: Tracking
                     {new Date(item.flaggedAt).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-2.5">
-                    <span className="text-[11px] font-semibold px-2 py-1 rounded-full bg-[#FDECEC] text-[#C4342E] whitespace-nowrap">
+                    <span
+                      className="text-[11px] font-semibold px-2 py-1 rounded-full whitespace-nowrap"
+                      style={{ background: STATUS_RED.bg, color: STATUS_RED.fg }}
+                    >
                       Flagged for review
                     </span>
                   </td>

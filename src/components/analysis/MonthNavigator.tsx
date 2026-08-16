@@ -6,13 +6,22 @@ interface MonthNavigatorProps {
   onChange: (month: string) => void;
 }
 
-/** Shared page-level month picker — drives both the resolution-time chart and the defect × station matrix, so they always describe the same slice of data. */
+/**
+ * Shared page-level month picker. Originally each chart had its own
+ * independent month state, which meant the resolution-time chart and the
+ * Defect × Station table could silently describe two different months at
+ * once — a controlled component owned by the parent (AnalysisView) instead
+ * removes that entire class of bug rather than trying to keep two pickers
+ * in sync.
+ */
 export function MonthNavigator({ months, selectedMonth, onChange }: MonthNavigatorProps) {
   const index = months.indexOf(selectedMonth);
   const label = selectedMonth
     ? new Date(`${selectedMonth}-01T00:00:00`).toLocaleDateString(undefined, { month: "long", year: "numeric" })
     : "";
 
+  // Guard both ends rather than wrapping — going past the last real month of
+  // data (or before the first) has no meaningful "next" value to show.
   function go(delta: number) {
     const next = index + delta;
     if (next >= 0 && next < months.length) onChange(months[next]);

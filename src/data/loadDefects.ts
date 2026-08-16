@@ -40,5 +40,3 @@ const referenceDate = getReferenceDate(rows);
 
 /** Full enriched dataset, computed once at module load. */
 export const defects: DefectRecord[] = rows.map((r, i) => enrich(r, i, referenceDate));
-
-export const DATA_REFERENCE_DATE = referenceDate;

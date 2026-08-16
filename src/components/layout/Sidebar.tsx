@@ -101,9 +101,6 @@ export function Sidebar({ active, setActive, open, setOpen }: SidebarProps) {
 
         <div className="relative px-6 py-5 border-t border-white/10">
           <div className="text-[11px] text-[#4A5A6E]">iX0 Production Line</div>
-          <div className="text-[12px] text-[#9FB0C3] font-medium mt-0.5">
-            300 units / day target
-          </div>
         </div>
       </aside>
     </>

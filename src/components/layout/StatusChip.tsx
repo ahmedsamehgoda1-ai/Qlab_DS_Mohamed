@@ -6,7 +6,7 @@ export function StatusChip() {
         <span className="relative inline-flex rounded-full h-2 w-2 bg-bmw-teal" />
       </span>
       <span className="text-[11px] font-medium tracking-wide text-[#CBD9E8] uppercase">
-        Live · Plant Debrecen
+        Live
       </span>
     </div>
   );

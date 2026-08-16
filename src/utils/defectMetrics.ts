@@ -94,30 +94,6 @@ export function severityDistribution(defects: DefectRecord[]): SeverityBin[] {
 }
 
 /* ---------------------------------------------------------------------- */
-/* Resolution time — including open (censored) cases                      */
-/* ---------------------------------------------------------------------- */
-
-export interface ResolutionPoint {
-  id: string;
-  date: string;
-  days: number;
-  status: DefectStatus;
-  isCensored: boolean;
-  defectName: string;
-}
-
-export function resolutionPoints(defects: DefectRecord[]): ResolutionPoint[] {
-  return defects.map((d) => ({
-    id: d.id,
-    date: d.date,
-    days: d.effectiveResolutionDays,
-    status: d.status,
-    isCensored: d.isCensored,
-    defectName: d.defectName,
-  }));
-}
-
-/* ---------------------------------------------------------------------- */
 /* Defect rate by Model / Motor Type / Design Package                     */
 /* ---------------------------------------------------------------------- */
 
@@ -126,6 +102,13 @@ export type RateDimension = "carModel" | "motorType" | "designPackage";
 export interface RateDatum {
   key: string;
   count: number;
+  /** % of all defects across every value of this dimension — NOT a true
+   * per-unit defect rate. This dataset has no production-volume field, so
+   * there's no way to know how many units of each model/motor/package were
+   * actually built; a model with more defects here may simply have had
+   * more units on the line. This is a relative share of defects, stated as
+   * that and nothing more. */
+  pct: number;
 }
 
 export function defectRateBy(defects: DefectRecord[], dimension: RateDimension): RateDatum[] {
@@ -134,8 +117,9 @@ export function defectRateBy(defects: DefectRecord[], dimension: RateDimension):
     const key = d[dimension];
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
+  const total = defects.length;
   return [...counts.entries()]
-    .map(([key, count]) => ({ key, count }))
+    .map(([key, count]) => ({ key, count, pct: total > 0 ? (count / total) * 100 : 0 }))
     .sort((a, b) => b.count - a.count);
 }
 
@@ -269,84 +253,156 @@ export function binResolutionDays(points: ResolutionOutlierPoint[], binCount = 2
 }
 
 /* ---------------------------------------------------------------------- */
-/* Defect × Station anomaly matrix (chi-square residual analysis)          */
+/* Defect × Station process containment                                    */
 /* ---------------------------------------------------------------------- */
 
-export interface MatrixCell {
-  defect: string;
+/**
+ * First version used a chi-square independence model, then a purely
+ * statistical ≥5%-of-cases threshold to decide which stations counted as a
+ * defect's "expected" ones. Both fell short for the same underlying reason:
+ * neither used what a quality engineer actually knows — the real
+ * manufacturing process. A station appearing frequently for a defect in the
+ * data doesn't tell you whether that's *correct* (the right process step)
+ * or a symptom of a process/mapping problem; only domain knowledge does.
+ *
+ * EXPECTED_STATIONS below is that domain knowledge — which stations are the
+ * legitimate detection points for each defect type, per the manufacturing
+ * process. It's the one deliberately "hardcoded" input in this whole app,
+ * and it's hardcoded on purpose: this is exactly the kind of judgment a
+ * real quality engineer brings that a purely statistical threshold can't
+ * derive from counts alone. Everything downstream of it — every count,
+ * every percentage, every flag — is still calculated fresh from whichever
+ * month's data is selected. Nothing about the RESULTS is hardcoded, only
+ * which stations are structurally appropriate for which defect.
+ */
+export const EXPECTED_STATIONS: Record<string, string[]> = {
+  "loose wiring": ["wire harness installation", "electrical test checkpoint"],
+  "cracked windshield": ["windshield installation", "water leak test checkpoint"],
+  "faulty battery": ["ev battery installation", "battery end-of-line test", "charging system inspection"],
+  // Final Quality is included directly here (not tracked as separate
+  // "downstream" detection) — paint defects don't have as clean a
+  // installation/dedicated-test split as most other defects do.
+  "paint scratch": ["paint booth inspection", "paint cure inspection", "final quality inspection"],
+  "hydraulic leak": ["powertrain fluid inspection", "brake fluid fill checkpoint", "underbody inspection checkpoint"],
+  // "Brake-related / wheel / underbody" per domain guidance, mapped to the
+  // actual stations that theme covers in this dataset.
+  "brake malfunction": ["brake fluid fill checkpoint", "underbody inspection checkpoint", "tire and rim installation", "axel installation"],
+  "sensor failure": ["adas calibration checkpoint", "electrical test checkpoint"],
+  "panel gap misalignment": ["body fit inspection", "door panel installation"],
+  // "Assembly station" per domain guidance covers both relevant assembly
+  // points a fastener could be missing from, not one specific station.
+  "missing fastener": ["second row seats installation", "door panel installation", "torque audit checkpoint"],
+  "brake fluid leak": ["brake fluid fill checkpoint", "underbody inspection checkpoint"],
+  "headlight aim out of spec": ["headlight installation", "light alignment checkpoint"],
+  // "Seat Installation" covers both rows.
+  "seat belt anchor loose": ["first row seats installation", "second row seats installation", "torque audit checkpoint"],
+  "charging port misalignment": ["charging port installation", "electrical test checkpoint"],
+  "software calibration error": ["software flash checkpoint", "end-of-line diagnostics", "adas calibration checkpoint"],
+  "paint run": ["paint booth inspection", "paint cure inspection", "final quality inspection"],
+};
+
+/** Defects where Final Quality is folded into "expected" (see comment
+ * above) rather than tracked as separate downstream detection. */
+const FQ_COUNTED_AS_EXPECTED = new Set(["paint scratch", "paint run"]);
+
+export const FINAL_QUALITY_STATION = "final quality inspection";
+
+/** Final Quality Detection % at/above this triggers the soft "potential
+ * escape" flag. A plain, adjustable heuristic, not a statistical test —
+ * the brief explicitly wants this as a soft signal, not an automatic
+ * classification. */
+const ESCAPE_FLAG_THRESHOLD_PCT = 25;
+
+/** When neither the expected stations nor Final Quality account for most of
+ * a defect's cases, that's a stronger signal than an ordinary escape — it
+ * suggests the domain mapping itself doesn't match what's happening on the
+ * floor, which needs checking before treating the pattern as real. */
+const DATA_QUALITY_CONCERN_THRESHOLD_PCT = 40;
+
+export interface StationShare {
   station: string;
   count: number;
-  expected: number;
-  rowTotal: number;
-  colTotal: number;
-  pctOfStation: number;
-  /** Simple standardized residual: (O - E) / sqrt(E). */
-  sr: number;
-  /**
-   * Adjusted (Haberman) residual — corrects SR for fixed row/column totals,
-   * giving more trustworthy significance than the plain SR when totals vary
-   * a lot across defects/stations (they do here).
-   */
-  ar: number;
-  /** Expected count < 5 — standard contingency-table rule of thumb for when
-   * a residual (SR or AR) becomes statistically unreliable to interpret. */
-  lowSample: boolean;
+  pct: number; // % of this defect's total cases detected at this station
 }
 
-export interface DefectStationMatrix {
-  defects: string[]; // row labels, sorted by total count desc
-  stations: string[]; // column labels, sorted by total count desc
-  cells: MatrixCell[][]; // [defectIndex][stationIndex]
-  grandTotal: number;
+export type ContainmentSignal = "high-containment" | "potential-escape" | "data-quality-concern";
+
+export interface ProcessContainmentRow {
+  defect: string;
+  total: number;
+  /** Every station this defect was detected at, sorted by count desc. */
+  stationBreakdown: StationShare[];
+  /** This defect's domain-mapped expected stations, with their live counts/%. */
+  expectedStations: StationShare[];
+  /** % of cases caught at the defect's own expected/process stations. */
+  processContainmentPct: number;
+  /** % of cases caught at Final Quality specifically (0 if folded into
+   * "expected" for this defect — see FQ_COUNTED_AS_EXPECTED). */
+  finalQualityPct: number;
+  /** Remainder — cases caught somewhere that's neither an expected station
+   * nor Final Quality. */
+  otherPct: number;
+  signal: ContainmentSignal;
 }
 
-export function computeDefectStationMatrix(defects: DefectRecord[]): DefectStationMatrix {
-  const defectTotals = new Map<string, number>();
-  const stationTotals = new Map<string, number>();
-  const cellCounts = new Map<string, number>();
+export function computeProcessContainment(defects: DefectRecord[]): ProcessContainmentRow[] {
+  const byDefect = new Map<string, Map<string, number>>();
+  const totals = new Map<string, number>();
 
   for (const d of defects) {
-    defectTotals.set(d.defectName, (defectTotals.get(d.defectName) ?? 0) + 1);
-    stationTotals.set(d.station, (stationTotals.get(d.station) ?? 0) + 1);
-    const key = `${d.defectName}|${d.station}`;
-    cellCounts.set(key, (cellCounts.get(key) ?? 0) + 1);
+    if (!byDefect.has(d.defectName)) byDefect.set(d.defectName, new Map());
+    const stationCounts = byDefect.get(d.defectName)!;
+    stationCounts.set(d.station, (stationCounts.get(d.station) ?? 0) + 1);
+    totals.set(d.defectName, (totals.get(d.defectName) ?? 0) + 1);
   }
 
-  const defectNames = [...defectTotals.entries()].sort((a, b) => b[1] - a[1]).map(([k]) => k);
-  const stationNames = [...stationTotals.entries()].sort((a, b) => b[1] - a[1]).map(([k]) => k);
-  const N = defects.length;
+  const rows: ProcessContainmentRow[] = [];
 
-  const cells: MatrixCell[][] = defectNames.map((defect) => {
-    const rowTotal = defectTotals.get(defect)!;
-    return stationNames.map((station) => {
-      const colTotal = stationTotals.get(station)!;
-      const count = cellCounts.get(`${defect}|${station}`) ?? 0;
-      const expected = N > 0 ? (rowTotal * colTotal) / N : 0;
-      const sr = expected > 0 ? (count - expected) / Math.sqrt(expected) : 0;
-      const arDenom = expected * (1 - rowTotal / N) * (1 - colTotal / N);
-      const ar = arDenom > 0 ? (count - expected) / Math.sqrt(arDenom) : 0;
-      const pctOfStation = colTotal > 0 ? (count / colTotal) * 100 : 0;
-      return {
-        defect,
-        station,
-        count,
-        expected,
-        rowTotal,
-        colTotal,
-        pctOfStation,
-        sr,
-        ar,
-        lowSample: expected < 5,
-      };
+  for (const [defect, stationCounts] of byDefect.entries()) {
+    const total = totals.get(defect)!;
+
+    const stationBreakdown: StationShare[] = [...stationCounts.entries()]
+      .map(([station, count]) => ({ station, count, pct: (count / total) * 100 }))
+      .sort((a, b) => b.count - a.count);
+
+    const expectedNames = EXPECTED_STATIONS[defect] ?? [];
+    const fqIsExpected = FQ_COUNTED_AS_EXPECTED.has(defect);
+
+    const expectedStations: StationShare[] = expectedNames.map((station) => {
+      const count = stationCounts.get(station) ?? 0;
+      return { station, count, pct: (count / total) * 100 };
     });
-  });
+    const processContainmentPct = expectedStations.reduce((sum, s) => sum + s.pct, 0);
 
-  return { defects: defectNames, stations: stationNames, cells, grandTotal: N };
-}
+    const fqCount = stationCounts.get(FINAL_QUALITY_STATION) ?? 0;
+    const finalQualityPct = fqIsExpected ? 0 : (fqCount / total) * 100;
 
-export function findMatrixCell(matrix: DefectStationMatrix, defect: string, station: string): MatrixCell | undefined {
-  const di = matrix.defects.indexOf(defect);
-  const si = matrix.stations.indexOf(station);
-  if (di < 0 || si < 0) return undefined;
-  return matrix.cells[di][si];
+    // Clamp with an epsilon, not just Math.max(0, ...) — floating-point
+    // division (e.g. 1/3 * 100 twice) can leave a residual as small as
+    // 1e-14, which displays as "0.0%" after rounding but still counts as
+    // "> 0" for exact comparisons, wrongly coloring an effectively-zero
+    // cell as if it were a real nonzero value.
+    const otherPctRaw = 100 - processContainmentPct - finalQualityPct;
+    const otherPct = otherPctRaw < 1e-6 ? 0 : otherPctRaw;
+
+    let signal: ContainmentSignal = "high-containment";
+    if (otherPct >= DATA_QUALITY_CONCERN_THRESHOLD_PCT) {
+      signal = "data-quality-concern";
+    } else if (!fqIsExpected && finalQualityPct >= ESCAPE_FLAG_THRESHOLD_PCT) {
+      signal = "potential-escape";
+    }
+
+    rows.push({
+      defect,
+      total,
+      stationBreakdown,
+      expectedStations,
+      processContainmentPct,
+      finalQualityPct,
+      otherPct,
+      signal,
+    });
+  }
+
+  return rows.sort((a, b) => b.total - a.total);
 }

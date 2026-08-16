@@ -6,6 +6,10 @@ import { DefectsTable } from "./DefectsTable";
 export function DefectsView() {
   const [search, setSearch] = useState("");
 
+  // Filtered here, not inside DefectsTable — this component owns the search
+  // box, so it owns the filtering; DefectsTable stays a dumb "sort and
+  // paginate whatever array you give me" component, reusable anywhere a
+  // list of DefectRecords needs a table, not tied to this one search UI.
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return defects;

@@ -2,7 +2,12 @@ import { useMemo, useState } from "react";
 import { ArrowUp, ArrowDown, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { DefectRecord, SortDirection } from "@/types";
 import { COLUMNS } from "./columns";
+import { STATUS_RED, STATUS_GREEN } from "@/components/shared/statusColors";
 
+// 50 rows/page: with up to 9,000 records, rendering everything unpaginated
+// would mean thousands of live <tr> elements — slow to paint and to scroll.
+// 50 keeps each page height reasonable without needing many clicks to page
+// through a typical month's worth of records.
 const PAGE_SIZE = 50;
 
 interface DefectsTableProps {
@@ -10,6 +15,9 @@ interface DefectsTableProps {
 }
 
 export function DefectsTable({ data }: DefectsTableProps) {
+  // Defaults to most-recent-first: the natural "what happened lately"
+  // question a quality engineer opens this tab to answer, without needing
+  // to click Date twice.
   const [sortKey, setSortKey] = useState<string>("date");
   const [sortDir, setSortDir] = useState<SortDirection>("desc");
   const [page, setPage] = useState(0);
@@ -95,11 +103,11 @@ export function DefectsTable({ data }: DefectsTableProps) {
                       return (
                         <td key={col.key} className="px-4 py-2.5 whitespace-nowrap">
                           <span
-                            className={`text-[11px] font-semibold px-2 py-1 rounded-full ${
-                              row.status === "Open"
-                                ? "bg-[#FDECEC] text-[#C4342E]"
-                                : "bg-[#E9F7EF] text-[#1F9254]"
-                            }`}
+                            className="text-[11px] font-semibold px-2 py-1 rounded-full"
+                            style={{
+                              background: row.status === "Open" ? STATUS_RED.bg : STATUS_GREEN.bg,
+                              color: row.status === "Open" ? STATUS_RED.fg : STATUS_GREEN.fg,
+                            }}
                           >
                             {row.status}
                           </span>

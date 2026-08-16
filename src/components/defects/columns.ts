@@ -1,5 +1,16 @@
 import { DefectRecord } from "@/types";
 
+/**
+ * One config object per column instead of 18 near-identical <td> blocks in
+ * DefectsTable.tsx — adding, removing, or reordering a column is a one-line
+ * change here rather than a change in three places (header cell, sort
+ * logic, and body cell) that could drift out of sync.
+ *
+ * sortValue and render are kept separate because they sometimes need to
+ * disagree: resolution days sorts on the raw number, but displays with a
+ * trailing note for still-open records — sorting on the formatted string
+ * would put "12.00" before "9.00" alphabetically.
+ */
 export interface ColumnDef {
   key: string;
   header: string;
@@ -10,7 +21,6 @@ export interface ColumnDef {
   align?: "left" | "right";
   minWidth?: string;
 }
-
 
 export const COLUMNS: ColumnDef[] = [
   {

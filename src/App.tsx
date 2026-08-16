@@ -7,6 +7,11 @@ import { AnalysisView } from "@/components/analysis/AnalysisView";
 import { DefectsView } from "@/components/defects/DefectsView";
 import { InfoView } from "@/components/info/InfoView";
 
+// Plain lookup tables instead of a router library: there are exactly 4 tabs,
+// none with sub-routes or deep links, so react-router would add a dependency
+// and boilerplate for something a Record<NavId, ...> already does in two
+// objects. If URL-addressable tabs or nested routes are ever needed, this is
+// the seam to swap in a router at.
 const PAGE_META: Record<NavId, { title: string; subtitle: string }> = {
   dashboard: {
     title: "Dashboard",

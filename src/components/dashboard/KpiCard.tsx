@@ -1,6 +1,7 @@
 import { LucideIcon } from "lucide-react";
 import { AccentName } from "@/types";
 import { ACCENTS } from "./accents";
+import { STATUS_RED, STATUS_GREEN } from "@/components/shared/statusColors";
 
 interface KpiCardProps {
   icon: LucideIcon;
@@ -35,9 +36,11 @@ export function KpiCard({
         </div>
         {delta && (
           <span
-            className={`text-[11px] font-semibold px-2 py-1 rounded-full ${
-              positive ? "bg-[#E9F7EF] text-[#1F9254]" : "bg-[#FDECEC] text-[#C4342E]"
-            }`}
+            className="text-[11px] font-semibold px-2 py-1 rounded-full"
+            style={{
+              background: positive ? STATUS_GREEN.bg : STATUS_RED.bg,
+              color: positive ? STATUS_GREEN.fg : STATUS_RED.fg,
+            }}
           >
             {delta}
           </span>
